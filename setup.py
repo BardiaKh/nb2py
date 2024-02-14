@@ -23,7 +23,7 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'np2py=np2py.main:main',
+            'nb2py=nb2py.main:main',
         ],
     },
     python_requires='>=3.6',
