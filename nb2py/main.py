@@ -23,6 +23,8 @@ def nb2py(notebook):
             cell_code = ''.join(cell['source'])
             lines = cell_code.split('\n')
             for line in lines:
+                if line.strip().startswith('!nb2py'):
+                    continue
                 if is_import_line(line):
                     imports.append(line)
                     continue
@@ -64,8 +66,11 @@ def convert(in_file, out_file):
     with open(in_file, 'r', encoding='utf-8') as f:
         notebook = json.load(f)
     py_str = nb2py(notebook)
+
+    disclaimer = "\n\n\n####\n# This file was converted using nb2py: https://github.com/BardiaKh/nb2py\n####"
+
     with open(out_file, 'w', encoding='utf-8') as f:
-        f.write(py_str)
+        f.write(py_str + disclaimer)
 
 def main():
     parser = argparse.ArgumentParser(description='Convert Jupyter Notebook to Python script.')
