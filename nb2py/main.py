@@ -9,7 +9,10 @@ def is_import_line(line):
 
 def nb2py(notebook):
     imports = []
+    os_modifications = []
+    sys_modifications = []
     main_code = []
+
     for cell in notebook['cells']:
         cell_type = cell['cell_type']
         if cell_type == 'markdown':
@@ -19,13 +22,33 @@ def nb2py(notebook):
             lines = cell_code.split('\n')
             for line in lines:
                 if is_import_line(line):
-                    imports.append(line)
-                else:
-                    if line.startswith("!") or line.startswith("%"):
-                        line = f"##{line}"
-                    main_code.append(line)
+                    imports.append(line.strip())
+                    continue
+                if line.strip().startswith('os.environ'):
+                    os_modifications.append(line.strip())
+                    continue
+                if line.strip().startswith('sys.path.append'):
+                    sys_modifications.append(line.strip())
+                    continue
+                if line.startswith("!") or line.startswith("%"):
+                    line = f"##{line}"
+                main_code.append(line)
+
+    # Insert os.environ and sys.path modifications after their imports
+    for i, line in enumerate(imports):
+        if 'import os' in line:
+            for mod in sorted(os_modifications, reverse=True):
+                imports.insert(i + 1, mod)
+            break
+
+    for i, line in enumerate(imports):
+        if 'import sys' in line or 'from sys import' in line:
+            for mod in sorted(sys_modifications, reverse=True):
+                imports.insert(i + 1, mod)
+            break
+
     imports_code = '\n'.join(imports)
-    main_code_str = '\n'.join(main_code)
+    main_code_str = '\n\n---\n\n'.join(main_code)
     indent = '    '
     if_main_template = "\n\nif __name__ == '__main__':\n"
     main_code_indented = '\n'.join(f"{indent}{line}" for line in main_code_str.split('\n'))
