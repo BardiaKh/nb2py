@@ -12,31 +12,37 @@ def nb2py(notebook):
     os_modifications = []
     sys_modifications = []
     main_code = []
+    cell_separator = '\n\n#---\n\n'  # Separator for cell contents
 
     for cell in notebook['cells']:
         cell_type = cell['cell_type']
+        cell_content = []
         if cell_type == 'markdown':
-            main_code.append(f'{header_comment}"""\n{" ".join(cell["source"])}\n"""')
+            cell_content.append(f'{header_comment}"""\n{" ".join(cell["source"])}\n"""')
         elif cell_type == 'code':
             cell_code = ''.join(cell['source'])
             lines = cell_code.split('\n')
             for line in lines:
                 if is_import_line(line):
-                    imports.append(line.strip())
+                    imports.append(line)
                     continue
-                if line.strip().startswith('os.environ'):
-                    os_modifications.append(line.strip())
+                if 'os.environ' in line:
+                    os_modifications.append(line)
                     continue
-                if line.strip().startswith('sys.path.append'):
-                    sys_modifications.append(line.strip())
+                if 'sys.path' in line:
+                    sys_modifications.append(line)
                     continue
                 if line.startswith("!") or line.startswith("%"):
                     line = f"##{line}"
-                main_code.append(line)
+                cell_content.append(line)
+                        
+        if cell_content:
+            main_code.append('\n'.join(cell_content))
+
 
     # Insert os.environ and sys.path modifications after their imports
     for i, line in enumerate(imports):
-        if 'import os' in line:
+        if 'import os' in line or 'from os import' in line:
             for mod in sorted(os_modifications, reverse=True):
                 imports.insert(i + 1, mod)
             break
@@ -48,7 +54,7 @@ def nb2py(notebook):
             break
 
     imports_code = '\n'.join(imports)
-    main_code_str = '\n\n---\n\n'.join(main_code)
+    main_code_str = cell_separator.join(main_code)
     indent = '    '
     if_main_template = "\n\nif __name__ == '__main__':\n"
     main_code_indented = '\n'.join(f"{indent}{line}" for line in main_code_str.split('\n'))
