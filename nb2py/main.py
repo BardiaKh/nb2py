@@ -26,7 +26,10 @@ def nb2py(notebook):
                     main_code.append(line)
     imports_code = '\n'.join(imports)
     main_code_str = '\n'.join(main_code)
-    return f"{imports_code}\n\nif __name__ == '__main__':\n    {main_code_str.replace('\n', '\n    ')}"
+    indent = '    '
+    if_main_template = "\n\nif __name__ == '__main__':\n"
+    main_code_indented = '\n'.join(f"{indent}{line}" for line in main_code_str.split('\n'))
+    return f"{imports_code}{if_main_template}{main_code_indented}"
 
 def convert(in_file, out_file):
     with open(in_file, 'r', encoding='utf-8') as f:
