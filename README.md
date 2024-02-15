@@ -20,14 +20,8 @@ You can install the `nb2py` extension directly from the Visual Studio Code Marke
 
 1. Open VS Code.
 2. Navigate to the Extensions view by clicking on the Extensions icon in the Activity Bar on the side of the window.
-3. Search for `nb2py`.
+3. Search for `nb2py`. [if not found here is the [link](https://marketplace.visualstudio.com/items?itemName=BardiaKhosravi.nb2py)]
 4. Click on the Install button.
-
-Alternatively, you can launch VS Code Quick Open (`Ctrl+P`), paste the following command, and press enter:
-
-```plaintext
-ext install nb2py
-```
 
 ## Usage
 
