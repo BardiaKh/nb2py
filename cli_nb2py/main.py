@@ -28,10 +28,10 @@ def nb2py(notebook):
                 if is_import_line(line):
                     imports.append(line)
                     continue
-                if 'os.environ' in line:
+                if line.strip().startswith('os.environ'):
                     os_modifications.append(line)
                     continue
-                if 'sys.path' in line:
+                if line.strip().startswith('sys.path'):
                     sys_modifications.append(line)
                     continue
                 if line.startswith("!") or line.startswith("%"):
