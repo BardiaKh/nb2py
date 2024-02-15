@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="nb2py",
-    version="0.2",
+    version="0.3",
     author="Bardia Khosravi",
     author_email="bardiakhosravi95@gmail.com",
     description="Reliable Notebook to Python converter",
