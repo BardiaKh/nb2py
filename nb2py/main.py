@@ -67,7 +67,11 @@ def convert(in_file, out_file):
         notebook = json.load(f)
     py_str = nb2py(notebook)
 
-    disclaimer = "\n\n\n############\n# This file was converted using nb2py: https://github.com/BardiaKh/nb2py\n############"
+    disclaimer = "\n\n\n"\
+                "##########################################################################\n"\
+                "# This file was converted using nb2py: https://github.com/BardiaKh/nb2py #\n"\
+                "##########################################################################\n"
+                
 
     with open(out_file, 'w', encoding='utf-8') as f:
         f.write(py_str + disclaimer)
