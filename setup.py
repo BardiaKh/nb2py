@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="nb2py",
+    name="cli-nb2py",
     version="0.4.0",
     author="Bardia Khosravi",
     author_email="bardiakhosravi95@gmail.com",
@@ -23,7 +23,7 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'nb2py=python_nb2py.main:main',
+            'nb2py=cli_nb2py.main:main',
         ],
     },
     python_requires='>=3.6',
