@@ -3,11 +3,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 function isImportLine(line: string): boolean {
-    return line.trim().startsWith('import ') || line.trim().startsWith('from ');
+    return line.startsWith('import ') || line.startsWith('from ');
 }
 
-function prepList(str: string): string[] {
-    return str.split('\n').filter(s => s.trim().length > 0);
+function removeTrailingNewline(str: string): string {
+    // Use a regular expression to match trailing newline characters and replace them with an empty string
+    return str.replace(/\n+$/, '');
 }
 
 async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
@@ -25,7 +26,8 @@ async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
         if (cellType === 'markdown') {
             cellContent.push(`# %%\n"""${cell.source.join(' ')}"""`);
         } else if (cellType === 'code') {
-            for (const line of cell.source) {
+            for (let line of cell.source) {
+                line = removeTrailingNewline(line);
                 if (line.trim().startsWith('!nb2py')) {
                     continue;
                 } 
@@ -33,15 +35,19 @@ async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
                     imports.push(line);
                     continue;
                 }
-                if (line.trim().startsWith('os.environ')) {
+                if (line.startsWith('os.environ')) {
                     osModifications.push(line);
                     continue;
                 } 
-                if (line.trim().startsWith('sys.path')) {
+                if (line.startsWith('sys.path')) {
                     sysModifications.push(line);
                     continue;
-                } 
-                cellContent.push(...prepList(line).map(l => l.startsWith('!') || l.startsWith('%') ? `##${l}` : l));
+                }
+                if (line.trim().startsWith('%') || line.trim().startsWith('!')) {
+                    cellContent.push(`##${line}`);
+                    continue;
+                }
+                cellContent.push(line);
             }
         }
         if (cellContent.length) mainCode.push(cellContent.join('\n'));
@@ -50,7 +56,7 @@ async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
     // Insert os.environ and sys.path modifications after their imports
     insertsAfterImports(imports, osModifications, 'import os', 'from os import');
     insertsAfterImports(imports, sysModifications, 'import sys', 'from sys import');
-
+    
     const importsCode = imports.join('\n');
     const mainCodeStr = mainCode.join(cellSeparator);
     const indent = '    ';

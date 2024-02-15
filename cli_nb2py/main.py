@@ -5,7 +5,7 @@ import os
 header_comment = '# %%\n'
 
 def is_import_line(line):
-    return line.strip().startswith('import ') or line.strip().startswith('from ')
+    return line.startswith('import ') or line.startswith('from ')
 
 def nb2py(notebook):
     imports = []
@@ -28,13 +28,13 @@ def nb2py(notebook):
                 if is_import_line(line):
                     imports.append(line)
                     continue
-                if line.strip().startswith('os.environ'):
+                if line.startswith('os.environ'):
                     os_modifications.append(line)
                     continue
-                if line.strip().startswith('sys.path'):
+                if line.startswith('sys.path'):
                     sys_modifications.append(line)
                     continue
-                if line.startswith("!") or line.startswith("%"):
+                if line.strip().startswith("!") or line.strip().startswith("%"):
                     line = f"##{line}"
                 cell_content.append(line)
                         
