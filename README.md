@@ -38,7 +38,7 @@ The converted Python script will be saved in the same directory as the notebook 
 To install `nb2py`, run the following setup script. Ensure you have Python 3.6 or later installed on your system.
 
 ```bash
-pip install git+https://github.com/BardiaKh/nb2py.git
+pip install cli-nb2py
 ```
 
 ### Usage
