@@ -1,11 +1,23 @@
 import argparse
 import json
 import os
+import re
 
 header_comment = '# %%\n'
 
 def is_import_line(line):
     return line.startswith('import ') or line.startswith('from ')
+
+def escape_double_quotes(line):
+    return re.sub(r'(?<!\\)"', '\\"', line)
+
+def process_triple_quotes(line, mode="start"):
+    if mode == "start":
+        line_seg = line.partition('"""')
+        return escape_double_quotes(line_seg[0]) + '"' + escape_double_quotes(line_seg[2])
+    elif mode == "end":
+        line_seg = line.rpartition('"""')
+        return escape_double_quotes(line_seg[0])+ '"' + escape_double_quotes(line_seg[2])
 
 def nb2py(notebook):
     imports = []
@@ -22,6 +34,8 @@ def nb2py(notebook):
         elif cell_type == 'code':
             cell_code = ''.join(cell['source'])
             lines = cell_code.split('\n')
+            in_multiline_string = False
+            multiline_string_content = []
             for line in lines:
                 if line.strip().startswith('!nb2py'):
                     continue
@@ -36,11 +50,27 @@ def nb2py(notebook):
                     continue
                 if line.strip().startswith("!") or line.strip().startswith("%"):
                     line = f"##{line}"
-                cell_content.append(line)
-                        
+
+                # Check for triple quotes
+                if '"""' in line and not line.strip().startswith('#') and line.count('"""') % 2 == 1:
+                    if in_multiline_string:
+                        # Closing triple quotes
+                        multiline_string_content.append(process_triple_quotes(line, mode="end"))
+                        cell_content.append('\\n" +\\\n"'.join(multiline_string_content))
+                        in_multiline_string = False
+                        multiline_string_content = []
+                    else:
+                        # Opening triple quotes
+                        in_multiline_string = True
+                        multiline_string_content.append(process_triple_quotes(line, mode="start"))
+                else:
+                    if in_multiline_string:
+                        multiline_string_content.append(escape_double_quotes(line))
+                    else:
+                        cell_content.append(line)
+
         if cell_content:
             main_code.append('\n'.join(cell_content))
-
 
     # Insert os.environ and sys.path modifications after their imports
     for i, line in enumerate(imports):
@@ -48,7 +78,6 @@ def nb2py(notebook):
             for mod in sorted(os_modifications, reverse=True):
                 imports.insert(i + 1, mod)
             break
-
     for i, line in enumerate(imports):
         if 'import sys' in line or 'from sys import' in line:
             for mod in sorted(sys_modifications, reverse=True):
@@ -57,9 +86,11 @@ def nb2py(notebook):
 
     imports_code = '\n'.join(imports)
     main_code_str = cell_separator.join(main_code)
-    indent = '    '
+
+    indent = ' '
     if_main_template = "\n\nif __name__ == '__main__':\n"
     main_code_indented = '\n'.join(f"{indent}{line}" for line in main_code_str.split('\n'))
+
     return f"{imports_code}{if_main_template}{main_code_indented}"
 
 def convert(in_file, out_file):

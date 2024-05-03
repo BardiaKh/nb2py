@@ -11,6 +11,37 @@ function removeTrailingNewline(str: string): string {
     return str.replace(/\n+$/, '');
 }
 
+function escapeDoubleQuotes(line: string): string {
+    return line.replace(/(?<!\\)"/g, '\\"');
+}
+
+function partition(str: string, sep: string): [string, string, string] {
+    const index = str.indexOf(sep);
+    if (index === -1) {
+      return [str, '', ''];
+    }
+    return [str.slice(0, index), sep, str.slice(index + sep.length)];
+  }
+  
+  function rpartition(str: string, sep: string): [string, string, string] {
+    const index = str.lastIndexOf(sep);
+    if (index === -1) {
+      return ['', '', str];
+    }
+    return [str.slice(0, index), sep, str.slice(index + sep.length)];
+  }
+  
+function processTripleQuotes(line: string, mode: "start" | "end" = "start"): string {
+    if (mode === "start") {
+        const lineSeg = partition(line, '"""')
+        return escapeDoubleQuotes(lineSeg[0]) + '"' + escapeDoubleQuotes(lineSeg[2]);
+    } else if (mode === "end") {
+        const lineSeg = rpartition(line, '"""')
+        return escapeDoubleQuotes(lineSeg[0]) + '"' + escapeDoubleQuotes(lineSeg[2]);
+    }
+    return "";
+}
+
 async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
     const notebookContent = fs.readFileSync(notebookPath, 'utf8');
     const notebook = JSON.parse(notebookContent);
@@ -26,11 +57,13 @@ async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
         if (cellType === 'markdown') {
             cellContent.push(`# %%\n"""${cell.source.join(' ')}"""`);
         } else if (cellType === 'code') {
+            let inMultilineString = false;
+            let multilineStringContent: string[] = [];
             for (let line of cell.source) {
                 line = removeTrailingNewline(line);
                 if (line.trim().startsWith('!nb2py')) {
                     continue;
-                } 
+                }
                 if (isImportLine(line)) {
                     imports.push(line);
                     continue;
@@ -38,7 +71,7 @@ async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
                 if (line.startsWith('os.environ')) {
                     osModifications.push(line);
                     continue;
-                } 
+                }
                 if (line.startsWith('sys.path')) {
                     sysModifications.push(line);
                     continue;
@@ -47,7 +80,27 @@ async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
                     cellContent.push(`##${line}`);
                     continue;
                 }
-                cellContent.push(line);
+
+                // Check for triple quotes
+                if (line.includes('"""') && !line.trim().startsWith('#') && (line.split('"""').length - 1) % 2 === 1) {
+                    if (inMultilineString) {
+                        // Closing triple quotes
+                        multilineStringContent.push(processTripleQuotes(line, "end"));
+                        cellContent.push(multilineStringContent.join('\\n" +\\\n"'));
+                        inMultilineString = false;
+                        multilineStringContent = [];
+                    } else {
+                        // Opening triple quotes
+                        inMultilineString = true;
+                        multilineStringContent.push(processTripleQuotes(line, "start"));
+                    }
+                } else {
+                    if (inMultilineString) {
+                        multilineStringContent.push(escapeDoubleQuotes(line));
+                    } else {
+                        cellContent.push(line);
+                    }
+                }
             }
         }
         if (cellContent.length) mainCode.push(cellContent.join('\n'));
@@ -56,7 +109,7 @@ async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
     // Insert os.environ and sys.path modifications after their imports
     insertsAfterImports(imports, osModifications, 'import os', 'from os import');
     insertsAfterImports(imports, sysModifications, 'import sys', 'from sys import');
-    
+
     const importsCode = imports.join('\n');
     const mainCodeStr = mainCode.join(cellSeparator);
     const indent = '    ';

@@ -11,6 +11,7 @@ This tool has two versions, a **command-line** version based on python and a **v
 - **Import Optimization**: Automatically moves all import statements to the top of the generated Python script.
 - **Executable Wrap**: Wraps all executable code within an `if __name__ == '__main__':` block, ensuring that the script can be imported without unintended execution.
 - **Markdown Conversion**: Converts markdown cells into Python comments, preserving the notebook's documentation in the script.
+- **Handling Multiline Strings**: Converts `""" """` to multiple `" "\` so there is no spacing issues. Especially useful for prompting LLMs. (added in v0.7.0)
 
 ## VSCode Extension 
 
