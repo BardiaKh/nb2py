@@ -35,6 +35,7 @@ def nb2py(notebook):
             cell_code = ''.join(cell['source'])
             lines = cell_code.split('\n')
             in_multiline_string = False
+            in_multiline_fstring = False
             multiline_string_content = []
             for line in lines:
                 if line.strip().startswith('!nb2py'):
@@ -52,16 +53,22 @@ def nb2py(notebook):
                     line = f"##{line}"
 
                 # Check for triple quotes
-                if '"""' in line and not line.strip().startswith('#') and line.count('"""') % 2 == 1:
+                if '"""' in line and not line.strip().startswith('#') and (len(line.split('"""'))-1) % 2 == 1:
                     if in_multiline_string:
                         # Closing triple quotes
                         multiline_string_content.append(process_triple_quotes(line, mode="end"))
-                        cell_content.append('\\n" +\\\n"'.join(multiline_string_content))
+                        if in_multiline_fstring:
+                            cell_content.append('\\n" +\\\nf"'.join(multiline_string_content))
+                        else:
+                            cell_content.append('\\n" +\\\n"'.join(multiline_string_content))
                         in_multiline_string = False
+                        in_multiline_fstring = False
                         multiline_string_content = []
                     else:
                         # Opening triple quotes
                         in_multiline_string = True
+                        if 'f"' in line:
+                            in_multiline_fstring = True
                         multiline_string_content.append(process_triple_quotes(line, mode="start"))
                 else:
                     if in_multiline_string:
@@ -87,7 +94,7 @@ def nb2py(notebook):
     imports_code = '\n'.join(imports)
     main_code_str = cell_separator.join(main_code)
 
-    indent = ' '
+    indent = '    '
     if_main_template = "\n\nif __name__ == '__main__':\n"
     main_code_indented = '\n'.join(f"{indent}{line}" for line in main_code_str.split('\n'))
 

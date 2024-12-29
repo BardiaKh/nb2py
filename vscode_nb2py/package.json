@@ -3,7 +3,7 @@
   "displayName": "nb2py",
   "description": "Converts notebooks to python scripts",
   "repository": "https://github.com/BardiaKh/nb2py",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "publisher": "BardiaKhosravi",
   "icon": "assets/icon.png",
 	"author": {

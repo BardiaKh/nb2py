@@ -58,6 +58,7 @@ async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
             cellContent.push(`# %%\n"""${cell.source.join(' ')}"""`);
         } else if (cellType === 'code') {
             let inMultilineString = false;
+            let isMultilineFString = false;
             let multilineStringContent: string[] = [];
             for (let line of cell.source) {
                 line = removeTrailingNewline(line);
@@ -86,12 +87,22 @@ async function nb2py(notebookPath: string, outputPath: string): Promise<void> {
                     if (inMultilineString) {
                         // Closing triple quotes
                         multilineStringContent.push(processTripleQuotes(line, "end"));
-                        cellContent.push(multilineStringContent.join('\\n" +\\\n"'));
+                        var multilineStringContentStr = "";
+                        if (isMultilineFString) {
+                            multilineStringContentStr = multilineStringContent.join('\\n" +\\\nf"');
+                        } else {
+                            multilineStringContentStr = multilineStringContent.join('\\n" +\\\n"');
+                        }
+                        cellContent.push(multilineStringContentStr);
                         inMultilineString = false;
+                        isMultilineFString = false;
                         multilineStringContent = [];
                     } else {
                         // Opening triple quotes
                         inMultilineString = true;
+                        if (line.includes('f"')) {
+                            isMultilineFString = true;
+                        }
                         multilineStringContent.push(processTripleQuotes(line, "start"));
                     }
                 } else {
